@@ -1,67 +1,98 @@
-const stocks = [
-    { symbol: 'AAPL', price: 150 },
-    { symbol: 'GOOGL', price: 2800 },
-    { symbol: 'AMZN', price: 3400 }
-];
+document.addEventListener('DOMContentLoaded', function () {
+    const marketDataDisplay = document.getElementById('market-data-display');
+    const portfolioDisplay = document.getElementById('portfolio-display');
+    const tradeForm = document.getElementById('trade-form');
+    const buyButton = document.getElementById('buy-button');
+    const sellButton = document.getElementById('sell-button');
 
-let portfolio = {};
+    // Simulated market data
+    const marketData = {
+        AAPL: 150.00,
+        GOOGL: 2750.00,
+        AMZN: 3400.00
+    };
 
-function displayStocks() {
-    const stockContainer = document.getElementById('stocks');
-    stockContainer.innerHTML = '';
-    stocks.forEach(stock => {
-        const stockDiv = document.createElement('div');
-        stockDiv.textContent = `${stock.symbol}: $${stock.price}`;
-        stockContainer.appendChild(stockDiv);
-    });
-}
+    // Portfolio data
+    const portfolio = {
+        AAPL: 0,
+        GOOGL: 0,
+        AMZN: 0,
+        cash: 100000 // Starting with $100,000 cash
+    };
 
-function populateStockOptions() {
-    const stockSelect = document.getElementById('stock');
-    stocks.forEach(stock => {
-        const option = document.createElement('option');
-        option.value = stock.symbol;
-        option.textContent = stock.symbol;
-        stockSelect.appendChild(option);
-    });
-}
-
-function updatePortfolio() {
-    const portfolioContainer = document.getElementById('portfolio-stocks');
-    portfolioContainer.innerHTML = '';
-    for (let symbol in portfolio) {
-        const stockDiv = document.createElement('div');
-        stockDiv.textContent = `${symbol}: ${portfolio[symbol]} shares`;
-        portfolioContainer.appendChild(stockDiv);
+    // Function to update market data display
+    function updateMarketDataDisplay() {
+        marketDataDisplay.innerHTML = '';
+        for (let stock in marketData) {
+            const stockElement = document.createElement('div');
+            stockElement.textContent = `${stock}: $${marketData[stock].toFixed(2)}`;
+            stockElement.classList.add('market-item');
+            marketDataDisplay.appendChild(stockElement);
+        }
     }
-}
 
-document.getElementById('tradeForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const stockSymbol = document.getElementById('stock').value;
-    const quantity = parseInt(document.getElementById('quantity').value);
-
-    if (!portfolio[stockSymbol]) {
-        portfolio[stockSymbol] = 0;
+    // Function to update portfolio display
+    function updatePortfolioDisplay() {
+        portfolioDisplay.innerHTML = '';
+        for (let item in portfolio) {
+            const portfolioElement = document.createElement('div');
+            portfolioElement.textContent = `${item}: ${portfolio[item]}`;
+            portfolioElement.classList.add('portfolio-item');
+            portfolioDisplay.appendChild(portfolioElement);
+        }
     }
-    portfolio[stockSymbol] += quantity;
-    updatePortfolio();
+
+    // Function to handle trade (buy/sell)
+    function handleTrade(action) {
+        const stockSymbol = document.getElementById('stock-symbol').value.toUpperCase();
+        const stockQuantity = parseInt(document.getElementById('stock-quantity').value);
+
+        if (marketData[stockSymbol] && stockQuantity > 0) {
+            const stockPrice = marketData[stockSymbol];
+            const tradeValue = stockQuantity * stockPrice;
+
+            if (action === 'buy' && portfolio.cash >= tradeValue) {
+                portfolio[stockSymbol] += stockQuantity;
+                portfolio.cash -= tradeValue;
+                showAlert('success', `Bought ${stockQuantity} shares of ${stockSymbol}`);
+            } else if (action === 'sell' && portfolio[stockSymbol] >= stockQuantity) {
+                portfolio[stockSymbol] -= stockQuantity;
+                portfolio.cash += tradeValue;
+                showAlert('success', `Sold ${stockQuantity} shares of ${stockSymbol}`);
+            } else {
+                showAlert('error', 'Invalid trade.');
+                return;
+            }
+            updatePortfolioDisplay();
+        } else {
+            showAlert('error', 'Invalid stock symbol or quantity.');
+        }
+    }
+
+    // Function to show alert
+    function showAlert(type, message) {
+        const alert = document.createElement('div');
+        alert.classList.add('alert', type);
+        alert.textContent = message;
+        document.body.appendChild(alert);
+        
+        // Delay to apply show class for transition effect
+        setTimeout(() => {
+            alert.classList.add('show');
+        }, 10);
+
+        setTimeout(() => {
+            alert.classList.remove('show');
+            setTimeout(() => {
+                alert.remove();
+            }, 300);
+        }, 3000);
+    }
+
+    buyButton.addEventListener('click', () => handleTrade('buy'));
+    sellButton.addEventListener('click', () => handleTrade('sell'));
+
+    // Initial display update
+    updateMarketDataDisplay();
+    updatePortfolioDisplay();
 });
-
-document.getElementById('sellButton').addEventListener('click', function() {
-    const stockSymbol = document.getElementById('stock').value;
-    const quantity = parseInt(document.getElementById('quantity').value);
-
-    if (!portfolio[stockSymbol] || portfolio[stockSymbol] < quantity) {
-        alert('Not enough shares to sell');
-        return;
-    }
-    portfolio[stockSymbol] -= quantity;
-    if (portfolio[stockSymbol] === 0) {
-        delete portfolio[stockSymbol];
-    }
-    updatePortfolio();
-});
-
-displayStocks();
-populateStockOptions();
